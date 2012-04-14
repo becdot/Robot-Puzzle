@@ -7,9 +7,9 @@ def robot_puzzle(string, min_moves, max_moves, width, height):
     for elem in range (0, width + 1):
         board_list.append('o')
     print board_list
+    
     # turns the original string into tuples of (x-coord, y-coord, type of space (., x, or o)
     board = []
-
     for index, elem in enumerate(board_list):
         x = index % (width + 1) # x coordinate
         y = index /(width + 1) # y coordinate
