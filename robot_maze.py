@@ -1,59 +1,189 @@
+# clean up move_multiple -- build hit_trap function that returns False if the robot hits a trap, so that only have one loop to break out of?
+#                        -- or build detect_type function that filters the type of space and tells the program to do something accordingly?
+# add in min and max moves
+# make removing paths more efficient (eg if there is a trap on (0, 2), remove the paths (1, 2), (2, 2) etc)
+
+
+import re, itertools
+
 def robot_puzzle(string, min_moves, max_moves, width, height):
-    board_list = list(string)
-    # adds goal spaces to the right side of the board
-    for elem in range(0, height):
-        board_list.insert(((width * elem) + (width + elem)), 'o')
-    # adds goal spaces to the bottom of the board
-    for elem in range (0, width + 1):
-        board_list.append('o')
-    print board_list
-    # turns the original string into tuples of (x-coord, y-coord, type of space (., x, or o)
-    board = []
 
-    for index, elem in enumerate(board_list):
-        x = index % (width + 1) # x coordinate
-        y = index /(width + 1) # y coordinate
-        z = elem # actual element (. or x or o)
-        board.append((x, y, z))
-    for tuple in board:
-        print tuple
-    
+    def add_goals():
+        "adds goal spaces along the right side and bottom of the board, and returns board_list"
+        # turns the original string into a list for ease of modifying
+        board_list = list(string)
+        # adds goal spaces to the right side of the board
+        for elem in range(0, height):
+            board_list.insert(((width * elem) + (width + elem)), 'o')
+        # adds goal spaces to the bottom of the board
+        for elem in range (0, width + 1):
+            board_list.append('o')
+        return board_list
         
-    def move_robot_x(location, x):
-        new_x = location[0] + x
-        new_location_index = location[1] * (width + 1) + new_x # the index of the new location in 'board'
-        new_location = (new_x, location[1], board[new_location_index][2]) # should be the same as new_location_index, assuming that 
-        # everything has looped correctly (current_location currently has the potential to be off the board)
-        print "The robot has moved from", location, x, "space/s to the right to the new location", new_location
+    def create_board():
+        "creates a board with sublists [x-coord, y-coord, space-type] and returns a list of the sublists\
+        space type must be ., x, or o (empty, trap, goal space)"
+        
+        board_list = add_goals()
+        board = []
+        for index, elem in enumerate(board_list):
+            x = index % (width + 1) # x coordinate
+            y = index /(width + 1) # y coordinate
+            z = elem # actual element (. or x or o)
+            board.append([x, y, z])
+        for list in board:
+            print list
+        print "\nThis is a %d by %d board\n" % (width, height)
+        return board
+            
+    def paths():
+        "returns a list of possible paths the robot can take across the board (eg 1 space across and 1 space down)"
+        paths = [i for i in itertools.product(range(height + 1), range(width + 1))]
+        # the robot must move at least one space
+        paths.remove((0, 0))
+        return paths
+                
+    def move_x(location):
+        "moves the robot 1 space to the right and returns the new location"
+        new_x = location[0] + 1
+        new_index = location[1] * (width + 1) + new_x # index of the new location in [board]
+        new_location = [new_x, location[1], board[new_index][2]]
+        assert new_location in board, "new location must be on the board"
+        print "The robot has moved from", location, "1 space to the right to the new location", new_location
         return new_location
         
-    def move_robot_y(location, y):
-        new_y = location[1] + y
-        new_location_index = new_y * (width + 1) + location[0] # the index of the new location in 'board'
-        new_location = (location[0], new_y, board[new_location_index][2]) # should be the same as new_location_index, assuming that 
-        # everything has looped correctly (current_location currently has the potential to be off the board)
-        print "The robot has moved from", location, y, "space/s down to the new location", new_location
+    def move_y(location):
+        "moves the robot 1 space down and returns the new location"
+        new_y = location[1] + 1
+        new_index = new_y * (width + 1) + location[0] # index of the new location in [board]
+        new_location = [location[0], new_y, board[new_index][2]]
+        assert new_location in board, "new location must be on the board"
+        print "The robot has moved from", location, "1 space down to the new location", new_location
         return new_location
-
-    
-    def move_robot_multiple(location, x, y):
+            
+            
+    def move_multiple(location, path):
+        "moves the robot 1 round of the specified path (eg if the path is (1, 1), moves the robot 1 space right and 1 space down)"
         new_location = location
-        for i in range(0, x):
-            new_location = move_robot_x(new_location, 1)
-        for j in range (0, y):
-            new_location = move_robot_y(new_location, 1)
-        print new_location
-    
-    
-       
-    start_location = board[0]
-#    move_robot_multiple(start_location, 0, 0)
-#    move_robot_multiple(start_location, 1, 0)
-#    move_robot_multiple(start_location, 1, 1)
-    move_robot_multiple(start_location, 2, 2)
-    
+        for x in range(path[0]):
+            print 'old location:', new_location
+            new_location = move_x(new_location)
+            if new_location[2] is not '.':
+                return new_location[2]
+            print 'new location:', new_location
+        for y in range(path[1]):
+            print 'old location:', new_location
+            new_location = move_y(new_location)
+            if new_location[2] is not '.':
+                return new_location[2]
+            print 'new location:', new_location
+        return new_location
+            
+    def robot_movement(location, path):
+        "loops the path until the robot hits either a goal or a trap"
+        new_location = location
+        while new_location is not 'o' or 'x':
+            if isinstance(new_location, list):
+                new_location = move_multiple(new_location, path)
+            else:
+                return new_location
                 
-                
-# Testing
-robot_puzzle('..xx.....', 1, 2, 3, 3)
-robot_puzzle('...xxx.x', 1, 2, 4, 2)
+    def minmax_moves():
+        pass
+            
+    board = create_board()
+    paths = paths()
+    
+    winning_paths = []   
+    for path in paths:
+        print path
+        path_result = robot_movement(board[0], path)
+        if path_result is 'o':
+            winning_paths.append(path)
+    print "The winning paths are:"
+    for path in winning_paths: print path
+            
+    
+    
+    
+#    robot_movement(board[0], paths[1])
+#    print '\n\n'
+#    robot_movement(board[0], paths[4])
+#    print '\n\n'
+#    robot_movement(board[0], (1, 0))
+    
+        
+#robot_puzzle('..xx.....', 1, 2, 3, 3)    
+robot_puzzle('..xxx.xxx..xxx.xxx..xxx.', 1, 1, 4, 6)
+    
+    
+    
+    
+    
+#    def move_multiple(location, path):
+#        new_location = location
+#        while new_location[2] is not 'o':
+#            for x in range(path[0]):
+#                print 'old location', new_location
+#                new_location = move_x(new_location)
+#                print 'new location', new_location
+#                if new_location[2] is 'x':
+#                    for i in range(width):
+#                        if (path[0] + i + 1, path[1]) in paths:
+#                            paths.remove((path[0] + i + 1, path[1]))
+#                            print 'removed', (path[0] + i + 1, path[1])
+#                            print paths
+#                    return True
+#                if new_location[2] is 'o':
+#                    break
+#            for y in range(path[1]):
+#                new_location = move_y(new_location)
+#                print new_location
+#                if new_location[2] is 'x':
+#                    for i in range(height):
+#                        if (path[0], path[1] + i + 1) in paths:
+#                            paths.remove((path[0], path[1] + i + 1))
+#                            print 'removed', (path[0], path[1] + i + 1)
+#                            print paths
+#                    return True
+#                if new_location[2] is 'o':
+#                    break
+#            print new_location
+#        print "the robot has reached the goal space!"
+#        print new_location
+#        return False
+    
+
+    
+#        if space[2] is 'x' and axis is 'x':
+#            print 'The robot has hit a trap along the x-axis!'
+#            if space[0] is 0:
+#                for x in range(space[0], width + 2):
+#                    for y in range(height + 2):
+#                        print 'about to remove', (x, y)
+#                        remove_paths((x, y))
+#                return False
+#            else:
+#                for i in range(height - space[1] + 2):
+#                    remove_paths(space[0], i)
+#                return False
+#
+#        elif space[2] is 'x' and axis is 'y':
+#            print 'The robot has hit a trap along the y-axis!'
+#            if space[1] is 0:
+#                for y in range(space[1], height + 2):
+#                    for x in range(width + 2):
+#                        print 'about to remove', (x, y)
+#                        remove_paths((x, y))
+#                return False
+#                
+#                
+#    def remove_paths(badpath):
+#        if badpath in paths:
+#            paths.remove(badpath)
+#            print 'removed', badpath, 'from the list of possible paths'
+#            print paths
+        
+    
+        
+
