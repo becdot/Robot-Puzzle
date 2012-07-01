@@ -10,7 +10,6 @@ def robot_puzzle(string, min_moves, max_moves, width, height):
 
     def add_goals():
         "adds goal spaces along the right side and bottom of the board, and returns board_list"
-        
         # turns the original string into a list for ease of modifying
         board_list = list(string)
         # adds goal spaces to the right side of the board
@@ -22,8 +21,8 @@ def robot_puzzle(string, min_moves, max_moves, width, height):
         return board_list
         
     def create_board():
-        '''creates a board with sublists [x-coord, y-coord, space-type] and returns a list of the sublists
-        space type must be ., x, or o (empty, trap, goal space)'''
+        "creates a board with sublists [x-coord, y-coord, space-type] and returns a list of the sublists\
+        space type must be ., x, or o (empty, trap, goal space)"
         
         board_list = add_goals()
         board = []
@@ -36,23 +35,16 @@ def robot_puzzle(string, min_moves, max_moves, width, height):
             print list
         print "\nThis is a %d by %d board\n" % (width, height)
         return board
-    
-    board = create_board()
-    print board
-        
+            
     def paths():
         "returns a list of possible paths the robot can take across the board (eg 1 space across and 1 space down)"
-        
         paths = [i for i in itertools.product(range(height + 1), range(width + 1))]
         # the robot must move at least one space
         paths.remove((0, 0))
         return paths
-        
-    paths = paths()
-        
+                
     def move_x(location):
         "moves the robot 1 space to the right and returns the new location"
-        
         new_x = location[0] + 1
         new_index = location[1] * (width + 1) + new_x # index of the new location in [board]
         new_location = [new_x, location[1], board[new_index][2]]
@@ -62,14 +54,72 @@ def robot_puzzle(string, min_moves, max_moves, width, height):
         
     def move_y(location):
         "moves the robot 1 space down and returns the new location"
-    
         new_y = location[1] + 1
         new_index = new_y * (width + 1) + location[0] # index of the new location in [board]
         new_location = [location[0], new_y, board[new_index][2]]
         assert new_location in board, "new location must be on the board"
         print "The robot has moved from", location, "1 space down to the new location", new_location
         return new_location
+            
+            
+    def move_multiple(location, path):
+        "moves the robot 1 round of the specified path (eg if the path is (1, 1), moves the robot 1 space right and 1 space down)"
+        new_location = location
+        for x in range(path[0]):
+            print 'old location:', new_location
+            new_location = move_x(new_location)
+            if new_location[2] is not '.':
+                return new_location[2]
+            print 'new location:', new_location
+        for y in range(path[1]):
+            print 'old location:', new_location
+            new_location = move_y(new_location)
+            if new_location[2] is not '.':
+                return new_location[2]
+            print 'new location:', new_location
+        return new_location
+            
+    def robot_movement(location, path):
+        "loops the path until the robot hits either a goal or a trap"
+        new_location = location
+        while new_location is not 'o' or 'x':
+            if isinstance(new_location, list):
+                new_location = move_multiple(new_location, path)
+            else:
+                return new_location
+                
+    def minmax_moves():
+        pass
+            
+    board = create_board()
+    paths = paths()
+    
+    winning_paths = []   
+    for path in paths:
+        print path
+        path_result = robot_movement(board[0], path)
+        if path_result is 'o':
+            winning_paths.append(path)
+    print "The winning paths are:"
+    for path in winning_paths: print path
+            
+    
+    
+    
+#    robot_movement(board[0], paths[1])
+#    print '\n\n'
+#    robot_movement(board[0], paths[4])
+#    print '\n\n'
+#    robot_movement(board[0], (1, 0))
+    
         
+#robot_puzzle('..xx.....', 1, 2, 3, 3)    
+robot_puzzle('..xxx.xxx..xxx.xxx..xxx.', 1, 1, 4, 6)
+    
+    
+    
+    
+    
 #    def move_multiple(location, path):
 #        new_location = location
 #        while new_location[2] is not 'o':
@@ -102,46 +152,8 @@ def robot_puzzle(string, min_moves, max_moves, width, height):
 #        print "the robot has reached the goal space!"
 #        print new_location
 #        return False
+    
 
-
-        
-        
-    def type_of_space(space):
-        if space[2] is 'x':
-            print 'The robot has hit a trap!'
-            return False
-        elif space[2] is 'o':
-            print 'The robot has reached a goal space!'
-            return True
-        else:
-            pass
-            
-    def move_multiple(location, path):
-        new_location = location
-        while True:
-            for x in range(path[0]):
-                print 'old location:', new_location
-                new_location = move_x(new_location)
-                if type_of_space(new_location) is False:
-                    break
-                elif type_of_space(new_location) is True:
-                    return path
-                print 'new location:', new_location
-            for y in range(path[1]):
-                print 'old location:', new_location
-                new_location = move_y(new_location)
-                if type_of_space(new_location) is False:
-                    break
-                elif type_of_space(new_location) is True:
-                    return path
-                print 'new location:', new_location
-    
-    
-    
-    
-    
-    
-    
     
 #        if space[2] is 'x' and axis is 'x':
 #            print 'The robot has hit a trap along the x-axis!'
@@ -175,11 +187,3 @@ def robot_puzzle(string, min_moves, max_moves, width, height):
     
         
 
-    create_board()
-    print paths
-    for path in paths:
-        move_multiple(board[0], path)
-        print '\n\n'    
-    
-        
-robot_puzzle('..xx.....', 1, 2, 3, 3)
